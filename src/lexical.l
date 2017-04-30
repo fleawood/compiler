@@ -1,10 +1,10 @@
 %{
 #include "syntax.tab.h"
-#include "Pointer.h"
-#define lexical_token_action(node_type, name, extra) \
+#include "Node.h"
+#define lexical_token_action(print_type, node_type, extra) \
 { \
-    yylval.type_pointer = make_node(node_type, #name, yylineno, extra); \
-    return name; \
+    yylval.type_pointer = make_leaf(_##node_type, print_type, yylineno, extra); \
+    return node_type; \
 }
 #define ignore_block_comment() \
 { \
@@ -17,6 +17,11 @@
         else unput(c); \
     } \
 }
+#define error_type_A(text) \
+{ \
+    fprintf(stderr, "Error type A at Line %d: Mysterious characters \'%s\'\n", yylineno, text); \
+}
+
 
 int yycolumn = 1;
 #define YY_USER_ACTION \
@@ -64,36 +69,36 @@ IF if
 ELSE else
 WHILE while
 %%
-{STRUCT}    {lexical_token_action(LEXICAL_OTHER_NODE, STRUCT, NULL);}
-{RETURN}    {lexical_token_action(LEXICAL_OTHER_NODE, RETURN, NULL);}
-{IF}        {lexical_token_action(LEXICAL_OTHER_NODE, IF, NULL);}
-{ELSE}      {lexical_token_action(LEXICAL_OTHER_NODE, ELSE, NULL);}
-{WHILE}     {lexical_token_action(LEXICAL_OTHER_NODE, WHILE, NULL);}
-{TYPE}      {lexical_token_action(LEXICAL_TYPE_NODE, TYPE, yytext);}
-{INT}       {lexical_token_action(LEXICAL_INT_NODE, INT, yytext);}
-{FLOAT}     {lexical_token_action(LEXICAL_FLOAT_NODE, FLOAT, yytext);}
-{ID}        {lexical_token_action(LEXICAL_ID_NODE, ID, yytext);}
+{STRUCT}    {lexical_token_action(LEXICAL_OTHER, STRUCT, NULL);}
+{RETURN}    {lexical_token_action(LEXICAL_OTHER, RETURN, NULL);}
+{IF}        {lexical_token_action(LEXICAL_OTHER, IF, NULL);}
+{ELSE}      {lexical_token_action(LEXICAL_OTHER, ELSE, NULL);}
+{WHILE}     {lexical_token_action(LEXICAL_OTHER, WHILE, NULL);}
+{TYPE}      {lexical_token_action(LEXICAL_TYPE, TYPE, yytext);}
+{INT}       {lexical_token_action(LEXICAL_INT, INT, yytext);}
+{FLOAT}     {lexical_token_action(LEXICAL_FLOAT, FLOAT, yytext);}
+{ID}        {lexical_token_action(LEXICAL_ID, ID, yytext);}
 {LCOMMENT}  {}
 {BCOMMENT}  {ignore_block_comment();}
-{SEMI}      {lexical_token_action(LEXICAL_OTHER_NODE, SEMI, NULL);}
-{COMMA}     {lexical_token_action(LEXICAL_OTHER_NODE, COMMA, NULL);}
-{ASSIGNOP}  {lexical_token_action(LEXICAL_OTHER_NODE, ASSIGNOP, NULL);}
-{RELOP}     {lexical_token_action(LEXICAL_OTHER_NODE, RELOP, NULL);}
-{PLUS}      {lexical_token_action(LEXICAL_OTHER_NODE, PLUS, NULL);}
-{MINUS}     {lexical_token_action(LEXICAL_OTHER_NODE, MINUS, NULL);}
-{STAR}      {lexical_token_action(LEXICAL_OTHER_NODE, STAR, NULL);}
-{DIV}       {lexical_token_action(LEXICAL_OTHER_NODE, DIV, NULL);}
-{AND}       {lexical_token_action(LEXICAL_OTHER_NODE, AND, NULL);}
-{OR}        {lexical_token_action(LEXICAL_OTHER_NODE, OR, NULL);}
-{DOT}       {lexical_token_action(LEXICAL_OTHER_NODE, DOT, NULL);}
-{NOT}       {lexical_token_action(LEXICAL_OTHER_NODE, NOT, NULL);}
-{LP}        {lexical_token_action(LEXICAL_OTHER_NODE, LP, NULL);}
-{RP}        {lexical_token_action(LEXICAL_OTHER_NODE, RP, NULL);}
-{LB}        {lexical_token_action(LEXICAL_OTHER_NODE, LB, NULL);}
-{RB}        {lexical_token_action(LEXICAL_OTHER_NODE, RB, NULL);}
-{LC}        {lexical_token_action(LEXICAL_OTHER_NODE, LC, NULL);}
-{RC}        {lexical_token_action(LEXICAL_OTHER_NODE, RC, NULL);}
+{SEMI}      {lexical_token_action(LEXICAL_OTHER, SEMI, NULL);}
+{COMMA}     {lexical_token_action(LEXICAL_OTHER, COMMA, NULL);}
+{ASSIGNOP}  {lexical_token_action(LEXICAL_OTHER, ASSIGNOP, NULL);}
+{RELOP}     {lexical_token_action(LEXICAL_OTHER, RELOP, NULL);}
+{PLUS}      {lexical_token_action(LEXICAL_OTHER, PLUS, NULL);}
+{MINUS}     {lexical_token_action(LEXICAL_OTHER, MINUS, NULL);}
+{STAR}      {lexical_token_action(LEXICAL_OTHER, STAR, NULL);}
+{DIV}       {lexical_token_action(LEXICAL_OTHER, DIV, NULL);}
+{AND}       {lexical_token_action(LEXICAL_OTHER, AND, NULL);}
+{OR}        {lexical_token_action(LEXICAL_OTHER, OR, NULL);}
+{DOT}       {lexical_token_action(LEXICAL_OTHER, DOT, NULL);}
+{NOT}       {lexical_token_action(LEXICAL_OTHER, NOT, NULL);}
+{LP}        {lexical_token_action(LEXICAL_OTHER, LP, NULL);}
+{RP}        {lexical_token_action(LEXICAL_OTHER, RP, NULL);}
+{LB}        {lexical_token_action(LEXICAL_OTHER, LB, NULL);}
+{RB}        {lexical_token_action(LEXICAL_OTHER, RB, NULL);}
+{LC}        {lexical_token_action(LEXICAL_OTHER, LC, NULL);}
+{RC}        {lexical_token_action(LEXICAL_OTHER, RC, NULL);}
 {WS}        {}
 {NL}        {yycolumn = 1;}
-. {err_occur = 1; printf("Error type A at Line %d: Mysterious characters \'%s\'\n", yylineno, yytext);}
+.           {err_occur = 1; error_type_A(yytext);}
 %%

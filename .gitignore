@@ -1,2 +1,9 @@
+parser
 test.cmm
 tests/
+src/__pycache__/
+src/lex.yy.c
+src/syntax.tab.*
+src/syntax.output
+src/*.o
+obj/

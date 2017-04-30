@@ -2,24 +2,36 @@ CC = gcc
 LEX = flex
 BISON = bison
 CFLAGS = -std=c99 -g
+PYTHON = python3
 
-CFILES = $(shell find ./ -name "*.c")
-OBJS = $(CFILES:.c=.o)
-LFILE = $(shell find ./ -name "*.l")
-YFILE = $(shell find ./ -name "*.y")
-LFC = $(shell find ./ -name "*.l" | sed s/[^/]*\\.l/lex.yy.c/)
-YFC = $(shell find ./ -name "*.y" | sed s/[^/]*\\.y/syntax.tab.c/)
-LFO = $(LFC:.c=.o)
-YFO = $(YFC:.c=.o)
+SRCDIR = src
+OBJDIR = obj
+CFILES = $(shell find $(SRCDIR) -name "*.c")
+OBJS = $(patsubst $(SRCDIR)%.c, $(OBJDIR)%.o, $(CFILES))
+LFILE = $(shell find $(SRCDIR) -name "*.l")
+YFILE = $(shell find $(SRCDIR) -name "*.y")
+LFC = $(shell find $(SRCDIR) -name "*.l" | sed s/[^/]*\\.l/lex.yy.c/)
+YFC = $(shell find $(SRCDIR) -name "*.y" | sed s/[^/]*\\.y/syntax.tab.c/)
+LFO = $(patsubst $(SRCDIR)%.c, $(OBJDIR)%.o, $(LFC))
+YFO = $(patsubst $(SRCDIR)%.c, $(OBJDIR)%.o, $(YFC))
+PYFILE = $(shell find $(SRCDIR) -name "*.py")
+PYCACHEDIR = $(shell find $(SRCDIR) -name "__pycache__")
+TOKEN_H = $(shell find $(SRCDIR) -name "token.h")
 
-parser: syntax $(filter-out $(LFO), $(OBJS))
-	$(CC) -o parser $(filter-out $(LFO), $(OBJS)) -lfl -ly
-syntax: lexical syntax-c
-	$(CC) -c $(YFC) -o $(YFO)
-lexical: $(LFILE)
-	$(LEX) -o $(LFC) $(LFILE)
-syntax-c: $(YFILE)
-	$(BISON) -o $(YFC) -d -v -t $(YFILE)
+parser: $(YFO) $(filter-out $(LFO), $(OBJS))
+	$(CC) -o $@ $(filter-out $(LFO), $(OBJS)) -lfl -ly
+$(OBJDIR)/%.o: $(SRCDIR)/%.c
+	mkdir -p $(OBJDIR)
+	$(CC) -o $@ $^ $(CFLAGS) -c
+$(YFO): $(LFC) $(YFC)
+	mkdir -p $(OBJDIR)
+	$(CC) -c $(YFC) -o $@
+$(LFC): $(TOKEN_H) $(LFILE)
+	$(LEX) -o $@ $(LFILE)
+$(YFC): $(YFILE)
+	$(BISON) -o $@ -d -v -t $^
+$(TOKEN_H): $(PYFILE)
+	$(PYTHON) $^
 -include $(patsubst %.o, %.d, $(OBJS))
 
 .PHONY: clean test
@@ -28,5 +40,8 @@ test:
 clean:
 	rm -f parser
 	rm -f $(OBJS) $(OBJS:.o=.d)
+	rm -rf $(OBJDIR)
 	rm -f $(LFC) $(YFC) $(YFC:.c=.h) $(YFC:.c=.output)
+	rm -rf $(PYCACHEDIR)
+	rm -f test.cmm
 	rm -f *~

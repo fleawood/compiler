@@ -1,14 +1,12 @@
 #include <stdio.h>
-#include "Pointer.h"
-extern int yylineno;
+#include "Node.h"
+#include "parse.h"
+
 extern void yyrestart(FILE* input_file);
 extern int yyparse();
-struct Pointer* root;
+Node* root;
 int err_occur;
-void yyerror(const char *msg)
-{
-	fprintf(stderr, "Error Type B at Line %d: %s\n", yylineno, msg);
-}
+
 int main(int argc, char **argv)
 {
 	if (argc <= 1) return 1;
@@ -23,6 +21,7 @@ int main(int argc, char **argv)
 		yyparse();
 		if (!err_occur) {
 			print_syntax_node(root, 0);
+			parse_syntax_node(root);
 		}
 		fclose(f);
 	}
