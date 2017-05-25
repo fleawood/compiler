@@ -29,6 +29,7 @@ struct Node {
 };
 
 #define child(p, n) ((Node **)(p -> child -> data))[n]
+#define child_type(p, n) (child(p, n) == NULL ? _NULL : child(p, n) -> node_type)
 #define child_cnt(p) (p -> child -> size)
 
 Node* make_leaf(int node_type, int print_type, int lineno, char* extra);

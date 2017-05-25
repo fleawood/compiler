@@ -5,7 +5,7 @@
 #include <assert.h>
 #include "Node.h"
 
-void insertnv(Node *p, int n, va_list ap)
+static void insertnv(Node *p, int n, va_list ap)
 {
 	for (int i = 0; i < n; ++i) {
 		Node *q = va_arg(ap, Node *);
@@ -14,7 +14,7 @@ void insertnv(Node *p, int n, va_list ap)
 	}
 }
 
-void insertn(Node *p, int n, ...)
+static void insertn(Node *p, int n, ...)
 {
 	va_list ap;
 	va_start(ap, n);

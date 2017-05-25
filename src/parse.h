@@ -3,6 +3,6 @@
 
 #include "Node.h"
 
-void parse_syntax_node(Node* p);
+void parse_syntax(Node* p);
 
 #endif

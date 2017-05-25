@@ -46,6 +46,7 @@ ExtDefList: ExtDef ExtDefList {syntax_token_action($$, ExtDefList, @$.first_line
 ExtDef: Specifier ExtDecList SEMI {syntax_token_action($$, ExtDef, @$.first_line, 3, $1, $2, $3);}
       | Specifier SEMI {syntax_token_action($$, ExtDef, @$.first_line, 2, $1, $2);}
       | Specifier FunDec CompSt {syntax_token_action($$, ExtDef, @$.first_line, 3, $1, $2, $3);}
+      | Specifier FunDec SEMI {syntax_token_action($$, ExtDef, @$.first_line, 3, $1, $2, $3);}
       | Specifier error SEMI {err_occur = 1;}
       ;
 ExtDecList: VarDec {syntax_token_action($$, ExtDecList, @$.first_line, 1, $1);}

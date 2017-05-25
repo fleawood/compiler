@@ -20,8 +20,8 @@ int main(int argc, char **argv)
 		err_occur = 0;
 		yyparse();
 		if (!err_occur) {
-			print_syntax_node(root, 0);
-			parse_syntax_node(root);
+//			print_syntax_node(root, 0);
+			parse_syntax(root);
 		}
 		fclose(f);
 	}
