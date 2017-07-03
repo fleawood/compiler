@@ -2,7 +2,8 @@
 #define _parse_h_
 
 #include "Node.h"
+#include "InterCode.h"
 
-void parse_syntax(Node* p);
+InterCodeLink* parse_syntax(Node* p);
 
 #endif

@@ -1,5 +1,6 @@
 parser
 test.cmm
+test.ir
 tests/
 src/__pycache__/
 src/lex.yy.c

@@ -10,6 +10,7 @@ typedef struct ArgLink ArgLink;
 
 #include "Type.h"
 #include "Stack.h"
+#include "Operand.h"
 
 struct FuncInfo
 {
@@ -27,6 +28,7 @@ struct Symbol
 	char *name;
 	int lineno;
 	bool is_func;
+	Operand *op;
 	union {
 		Type *type;
 		FuncInfo *func;

@@ -6,10 +6,11 @@
 #include "Symbol.h"
 #include "misc.h"
 #include "link.h"
+#include "translate.h"
 
-void parse_Program(Node *p);
-void parse_ExtDefList(Node *p);
-void parse_ExtDef(Node *p);
+InterCodeLink* parse_Program(Node *p);
+InterCodeLink* parse_ExtDefList(Node *p);
+InterCodeLink* parse_ExtDef(Node *p);
 void parse_ExtDecList(Node *p, Type *type);
 Type* parse_Specifier(Node *p);
 Type* parse_StructSpecifier(Node *p);
@@ -19,13 +20,13 @@ Symbol* parse_VarDec(Node *p, Type *type);
 FuncInfo* parse_FunDec(Node *p, Type *type, bool is_def);
 FuncInfo* parse_VarList(Node *p, Type *type);
 Symbol* parse_ParamDec(Node *p);
-void parse_CompSt(Node *p, FuncInfo *func);
-void parse_StmtList(Node *p, Type *type);
-void parse_Stmt(Node *p, Type *type);
-void parse_DefList(Node *p, Type *s);
-void parse_Def(Node *p, Type *s);
-void parse_DecList(Node *p, Type *type, Type *s);
-void parse_Dec(Node *p, Type *type, Type *s);
+InterCodeLink* parse_CompSt(Node *p, FuncInfo *func);
+InterCodeLink* parse_StmtList(Node *p, Type *type);
+InterCodeLink* parse_Stmt(Node *p, Type *type);
+InterCodeLink* parse_DefList(Node *p, Type *s);
+InterCodeLink* parse_Def(Node *p, Type *s);
+InterCodeLink* parse_DecList(Node *p, Type *type, Type *s);
+InterCodeLink* parse_Dec(Node *p, Type *type, Type *s);
 ExpType* parse_Exp(Node *p);
 TypeLink* parse_Args(Node *p);
 
@@ -203,14 +204,18 @@ ExpType* parse_Exp(Node *p)
 	return exp;
 }
 
-void parse_Dec(Node *p, Type *type, Type *s)
+InterCodeLink* parse_Dec(Node *p, Type *type, Type *s)
 {
 	assert(p -> node_type == _Dec);
 	Symbol *symbol = parse_VarDec(child(p, 0), type);
+	InterCodeLink *icl = NULL;
+	InterCodeLink *icl1, *icl2;
+	Operand *op;
 	if (s != NULL) {
 		insert_var_to_struct(symbol, s);
 	} else {
 		insert_var_to_stack(symbol, stack_top);
+		icl = translate_VarDec(child(p, 0), type);
 	}
 	switch (child_cnt(p)) {
 		case 1:
@@ -218,69 +223,106 @@ void parse_Dec(Node *p, Type *type, Type *s)
 		case 3:
 			assert(child_type(p, 1) == _ASSIGNOP);
 			parse_Exp(child(p, 2));
+			op = make_operand_tempvar();
+			icl1 = translate_Exp(child(p, 2), &op);
+			icl2 = make_intercode_link(assign, symbol -> op, op);
+			icl = bind_code3(icl, icl1, icl2);
+			if (s != NULL) {
+				parse_error(ERR_FIELD_INIT, p -> lineno, "assignment in field \"%s\".", symbol -> name);
+			}
 			break;
 		default:
 			assert(0);
 			break;
 	}
+	return icl;
 }
 
-void parse_DecList(Node *p, Type *type, Type *s)
+InterCodeLink* parse_DecList(Node *p, Type *type, Type *s)
 {
 	assert(p -> node_type == _DecList);
-	parse_Dec(child(p, 0), type, s);
+	InterCodeLink *icl = NULL;
+	icl = bind_code2(icl, parse_Dec(child(p, 0), type, s));
 	while (child_cnt(p) == 3) {
 		assert(child_type(p, 1) == _COMMA);
 		assert(child_type(p, 2) == _DecList);
 		p = child(p, 2);
-		parse_Dec(child(p, 0), type, s);
+		icl = bind_code2(icl, parse_Dec(child(p, 0), type, s));
 	}
+	return icl;
 }
 
-void parse_Def(Node *p, Type *s)
+InterCodeLink* parse_Def(Node *p, Type *s)
 {
 	assert(p -> node_type == _Def);
 	Type *type = parse_Specifier(child(p, 0));
-	parse_DecList(child(p, 1), type, s);
+	return parse_DecList(child(p, 1), type, s);
 }
 
-void parse_DefList(Node *p, Type *s)
+InterCodeLink* parse_DefList(Node *p, Type *s)
 {
+	InterCodeLink *icl = NULL;
 	while (p != NULL) {
 		assert(p -> node_type == _DefList);
-		parse_Def(child(p, 0), s);
+		icl = bind_code2(icl, parse_Def(child(p, 0), s));
 		p = child(p, 1);
 	}
+	return icl;
 }
 
-void parse_Stmt(Node *p, Type *type)
+InterCodeLink* parse_Stmt(Node *p, Type *type)
 {
 	assert(p -> node_type == _Stmt);
 	ExpType *exp;
+	InterCodeLink *icl = NULL;
+	InterCodeLink *icl1, *icl2, *icl3, *icl4, *icl5, *icl6, *icl7;
+	Operand *op = NULL;
+	Operand *label1, *label2, *label3;
 	switch (child_type(p, 0)) {
 		case _Exp:
 			parse_Exp(child(p, 0));
+			icl = translate_Exp(child(p, 0), &op);
 			break;
 		case _CompSt:
-			parse_CompSt(child(p, 0), NULL);
+			icl = parse_CompSt(child(p, 0), NULL);
 			break;
 		case _RETURN:
 			exp = parse_Exp(child(p, 1));
 			if (!is_type_equal(exp -> type, type)) {
 				parse_error(ERR_RETURN_TYPE, p -> lineno, "incompatible return type.");
 			}
+			op = make_operand_tempvar();
+			icl1 = translate_Exp(child(p, 1), &op);
+			icl2 = make_intercode_link(return, op);
+			icl = bind_code2(icl1, icl2);
 			break;
 		case _IF:
 			exp = parse_Exp(child(p, 2));
 			if (!is_type_int(exp -> type)) {
 				parse_error(ERR_INVALID_OPERAND, p -> lineno, "int value required in if condition.");
 			}
-			parse_Stmt(child(p, 4), type);
 			switch (child_cnt(p)) {
 				case 5:
+					label1 = make_operand_label();
+					label2 = make_operand_label();
+					icl1 = translate_Cond(child(p, 2), label1, label2);
+					icl2 = make_intercode_link(label, label1);
+					icl3 = parse_Stmt(child(p, 4), type);
+					icl4 = make_intercode_link(label, label2);
+					icl = bind_code4(icl1, icl2, icl3, icl4);
 					break;
 				case 7:
-					parse_Stmt(child(p, 6), type);
+					label1 = make_operand_label();
+					label2 = make_operand_label();
+					label3 = make_operand_label();
+					icl1 = translate_Cond(child(p, 2), label1, label2);
+					icl2 = make_intercode_link(label, label1);
+					icl3 = parse_Stmt(child(p, 4), type);
+					icl4 = make_intercode_link(goto, label3);
+					icl5 = make_intercode_link(label, label2);
+					icl6 = parse_Stmt(child(p, 6), type);
+					icl7 = make_intercode_link(label, label3);
+					icl = bind_code7(icl1, icl2, icl3, icl4, icl5, icl6, icl7);
 					break;
 				default:
 					assert(0);
@@ -292,31 +334,47 @@ void parse_Stmt(Node *p, Type *type)
 			if (!is_type_int(exp -> type)) {
 				parse_error(ERR_INVALID_OPERAND, p -> lineno, "int value required in while condition.");
 			}
-			parse_Stmt(child(p, 4), type);
+			label1 = make_operand_label();
+			label2 = make_operand_label();
+			label3 = make_operand_label();
+			icl1 = make_intercode_link(label, label1);
+			icl2 = translate_Cond(child(p, 2), label2, label3);
+			icl3 = make_intercode_link(label, label2);
+			icl4 = parse_Stmt(child(p, 4), type);
+			icl5 = make_intercode_link(goto, label1);
+			icl6 = make_intercode_link(label, label3);
+			icl = bind_code6(icl1, icl2, icl3, icl4, icl5, icl6);
 			break;
 		default:
 			assert(0);
 			break;
 	}
+	return icl;
 }
 
-void parse_StmtList(Node *p, Type *type)
+InterCodeLink* parse_StmtList(Node *p, Type *type)
 {
+	InterCodeLink *icl = NULL;
 	while (p != NULL) {
 		assert(p -> node_type == _StmtList);
-		parse_Stmt(child(p, 0), type);
+		icl = bind_code2(icl, parse_Stmt(child(p, 0), type));
 		p = child(p, 1);
 	}
+	return icl;
 }
 
-void parse_CompSt(Node *p, FuncInfo *func)
+InterCodeLink* parse_CompSt(Node *p, FuncInfo *func)
 {
 	assert(p -> node_type == _CompSt);
+	InterCodeLink *icl = NULL;
+	InterCodeLink *icl1, *icl2;
 	push_stack();
 	if (func != NULL) insert_func_args_to_stack(func, stack_top);
-	parse_DefList(child(p, 1), NULL);
-	parse_StmtList(child(p, 2), func == NULL ? NULL : func -> type);
+	icl1 = parse_DefList(child(p, 1), NULL);
+	icl2 = parse_StmtList(child(p, 2), func == NULL ? NULL : func -> type);
+	icl = bind_code2(icl1, icl2);
 	pop_stack();
+	return icl;
 }
 
 Symbol* parse_ParamDec(Node *p)
@@ -366,7 +424,7 @@ FuncInfo* parse_FunDec(Node *p, Type *type, bool is_def)
 	return func;
 }
 
-Symbol *parse_VarDec(Node *p, Type *type)
+Symbol* parse_VarDec(Node *p, Type *type)
 {
 	assert(p -> node_type == _VarDec);
 	Symbol *symbol = NULL;
@@ -475,10 +533,11 @@ void parse_ExtDecList(Node *p, Type *type)
 	}
 }
 
-void parse_ExtDef(Node *p)
+InterCodeLink* parse_ExtDef(Node *p)
 {
 	assert(p -> node_type == _ExtDef);
 	Type *type = parse_Specifier(child(p, 0));
+	InterCodeLink *icl = NULL, *icl1, *icl2;
 	FuncInfo *func;
 	switch (child_type(p, 1)) {
 		case _ExtDecList:
@@ -490,10 +549,12 @@ void parse_ExtDef(Node *p)
 			switch (child_type(p, 2)) {
 				case _CompSt:
 					func = parse_FunDec(child(p, 1), type, true);
-					parse_CompSt(child(p, 2), func);
+					icl1 = translate_FunDec(child(p, 1), func);
+					icl2 = parse_CompSt(child(p, 2), func);
+					icl = bind_code2(icl1, icl2);
 					break;
 				case _SEMI:
-					func = parse_FunDec(child(p, 1), type, false);
+					parse_FunDec(child(p, 1), type, false);
 					break;
 				default:
 					assert(0);
@@ -504,27 +565,57 @@ void parse_ExtDef(Node *p)
 			assert(0);
 			break;
 	}
+	return icl;
 }
 
-void parse_ExtDefList(Node *p)
+InterCodeLink* parse_ExtDefList(Node *p)
 {
+	InterCodeLink *icl = NULL;
 	while (p != NULL) {
 		assert(p -> node_type == _ExtDefList);
-		parse_ExtDef(child(p, 0));
+		icl = bind_code2(icl, parse_ExtDef(child(p, 0)));
 		p = child(p, 1);
 	}
+	return icl;
 }
 
-void parse_Program(Node *p)
+InterCodeLink* parse_Program(Node *p)
 {
 	assert(p -> node_type == _Program);
-	parse_ExtDefList(child(p, 0));
+	return parse_ExtDefList(child(p, 0));
 }
 
-void parse_syntax(Node *p)
+void load_read()
 {
+	FuncInfo *func = make_func_info(type_int);
+	func -> is_def = true;
+	Symbol *symbol = make_func_symbol(func, "read", -1);
+	insert_func_def_to_stack(symbol, stack_top);
+}
+
+void load_write()
+{
+	FuncInfo *func = make_func_info(type_int);
+	func -> is_def = true;
+	Symbol *arg = make_var_symbol(type_int, "n", -1);
+	insert_var_to_func_args(arg, func);
+	Symbol *symbol = make_func_symbol(func, "write", -1);
+	insert_func_def_to_stack(symbol, stack_top);
+}
+
+void load_pre_define_func()
+{
+	load_read();
+	load_write();
+}
+
+InterCodeLink* parse_syntax(Node *p)
+{
+	InterCodeLink *icl;
 	hash_table_init();
 	push_stack();
-	parse_Program(p);
+	load_pre_define_func();
+	icl = parse_Program(p);
 	check_func_def();
+	return icl;
 }

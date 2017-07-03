@@ -3,8 +3,8 @@
 #include "Type.h"
 #include "link.h"
 
-Type _type_int = {._type = TYPE_INT};
-Type _type_float = {._type = TYPE_FLOAT};
+Type _type_int = {._type = TYPE_INT, .size = 4};
+Type _type_float = {._type = TYPE_FLOAT, .size = 4};
 
 ExpType _err_exp_type = {.type = NULL};
 
@@ -19,7 +19,7 @@ bool is_type_equal(Type *type1, Type *type2)
 			return true;
 			break;
 		case TYPE_ARRAY:
-			return type1 -> _array -> size == type2 -> _array -> size && is_type_equal(type1 -> _array -> elem, type2 -> _array -> elem);
+			return type1 -> _array -> length == type2 -> _array -> length && is_type_equal(type1 -> _array -> elem, type2 -> _array -> elem);
 			break;
 		case TYPE_STRUCT:
 			field1 = type1 -> _field;
@@ -45,6 +45,7 @@ Field* make_field(Symbol *symbol)
 	Field *field = malloc(sizeof(Field));
 	field -> symbol = symbol;
 	field -> next_field = NULL;
+	field -> offset = 0;
 	return field;
 }
 
@@ -53,16 +54,18 @@ Type* make_struct_type()
 	Type *type = malloc(sizeof(Type));
 	type -> _type = TYPE_STRUCT;
 	type -> _field = NULL;
+	type -> size = 0;
 	return type;
 }
 
-Type* make_array_type(Type *elem, int size)
+Type* make_array_type(Type *elem, int length)
 {
 	Type *type = malloc(sizeof(Type));
 	type -> _type = TYPE_ARRAY;
 	type -> _array = malloc(sizeof(Array));
 	type -> _array -> elem = elem;
-	type -> _array -> size = size;
+	type -> _array -> length = length;
+	type -> size = elem -> size * length;
 	return type;
 }
 

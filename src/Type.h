@@ -8,6 +8,7 @@ typedef struct ExpType ExpType;
 typedef struct TypeLink TypeLink;
 
 #include "Symbol.h"
+#include "translate.h"
 
 struct Type
 {
@@ -20,19 +21,22 @@ struct Type
 	union {
 		struct Array {
 			Type *elem;
-			int size;
+			int length;
 		} *_array;
 		struct Field {
 			Symbol *symbol;
 			Field *next_field;
+			int offset;
 		} *_field;
 	};
+	int size;
 };
 
 struct ExpType
 {
 	Type *type;
 	bool is_lvalue;
+	Operand *op;
 };
 
 struct TypeLink
@@ -52,7 +56,7 @@ extern Type _type_int, _type_float;
 #define is_type_array(type) (type != NULL && type -> _type == TYPE_ARRAY)
 #define is_type_struct(type) (type != NULL && type -> _type == TYPE_STRUCT)
 #define is_type_int_or_float(type) (is_type_int(type) || is_type_float(type))
-//#define is_type_equal(type1, type2) (type1 != NULL && type1 -> _type == type2 -> _type)
+
 bool is_type_equal(Type *type1, Type *type2);
 
 #define elem_type(type) (type -> _array -> elem)

@@ -52,7 +52,7 @@ enum {
 	_Exp,
 	_Args
 };
-static const char *_token_name[] = {
+static char *_token_name[] = {
 "NULL", "INT", "FLOAT", "ID", "SEMI", "COMMA", "ASSIGNOP", "RELOP", "PLUS", "MINUS", "STAR", "DIV", "AND", "OR", "DOT", "NOT", "TYPE", "LP", "RP", "LB", "RB", "LC", "RC", "STRUCT", "RETURN", "IF", "ELSE", "WHILE", "Program", "ExtDefList", "ExtDef", "ExtDecList", "Specifier", "StructSpecifier", "OptTag", "Tag", "VarDec", "FunDec", "VarList", "ParamDec", "CompSt", "StmtList", "Stmt", "DefList", "Def", "DecList", "Dec", "Exp", "Args"
 };
 #define token_name(token) _token_name[token]

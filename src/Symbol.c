@@ -31,6 +31,7 @@ Symbol* make_var_symbol(Type *type, const char *name, int lineno)
 	symbol -> name = (char *)name;
 	symbol -> lineno = lineno;
 	symbol -> is_func = false;
+	symbol -> op = make_operand_variable();
 	return symbol;
 }
 
@@ -51,7 +52,6 @@ Symbol* make_struct_symbol(const char *name, int lineno)
 
 Symbol* make_array_symbol(Type *type, const char *name, int lineno)
 {
-//	Type *type = make_array_type(elem, size);
 	return make_var_symbol(type, name, lineno);
 }
 
@@ -62,6 +62,7 @@ Symbol* make_func_symbol(FuncInfo *func, const char *name, int lineno)
 	symbol -> name = (char *)name;
 	symbol -> lineno = lineno;
 	symbol -> is_func = true;
+	symbol -> op = NULL;
 	return symbol;
 }
 
@@ -171,6 +172,8 @@ void insert_var_to_struct(Symbol *symbol, Type *type)
 {
 	if (find_field_in_struct(symbol -> name, type) == NULL) {
 		Field *field = make_field(symbol);
+		field -> offset = type -> size;
+		type -> size += symbol -> type -> size;
 		insert_to_link(field, type -> _field, next_field);
 	} else {
 		parse_error(ERR_FIELD_REDEF, symbol -> lineno, "redefined field \"%s\".", symbol -> name);

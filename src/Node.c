@@ -48,6 +48,30 @@ Node* make_leaf(int node_type, int print_type, int lineno, char *extra)
 			p -> fvalue = strtof(extra, NULL);
 			break;
 		case LEXICAL_OTHER:
+			if (extra != NULL) {
+				switch (extra[0]) {
+					case '=':
+						p -> reltype = RELOP_EQ;
+						break;
+					case '!':
+						p -> reltype = RELOP_NE;
+						break;
+					case '<':
+						if (extra[1] == '=')  {
+							p -> reltype = RELOP_LE;
+						} else {
+							p -> reltype = RELOP_LT;
+						}
+						break;
+					case '>':
+						if (extra[1] == '=')  {
+							p -> reltype = RELOP_GE;
+						} else {
+							p -> reltype = RELOP_GT;
+						}
+						break;
+				}
+			}
 			break;
 		default:
 			break;
@@ -91,3 +115,29 @@ void print_syntax_node(Node* p, int depth)
 	}
 }
 
+char *relop_name(int reltype)
+{
+	switch (reltype) {
+		case RELOP_LT:
+			return "<";
+			break;
+		case RELOP_LE:
+			return "<=";
+			break;
+		case RELOP_EQ:
+			return "==";
+			break;
+		case RELOP_NE:
+			return "!=";
+			break;
+		case RELOP_GT:
+			return ">";
+			break;
+		case RELOP_GE:
+			return ">=";
+			break;
+		default:
+			return NULL;
+			break;
+	}
+}

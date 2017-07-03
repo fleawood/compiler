@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include "Node.h"
 #include "parse.h"
+#include "InterCode.h"
 
 extern void yyrestart(FILE* input_file);
 extern int yyparse();
@@ -9,21 +10,22 @@ int err_occur;
 
 int main(int argc, char **argv)
 {
-	if (argc <= 1) return 1;
-	for (int i = 1; i < argc; ++i) {
-		FILE *f = fopen(argv[i], "r");
-		if (!f) {
-			perror(argv[i]);
-			return 1;
-		}
-		yyrestart(f);
-		err_occur = 0;
-		yyparse();
-		if (!err_occur) {
-//			print_syntax_node(root, 0);
-			parse_syntax(root);
-		}
-		fclose(f);
+	if (argc != 3) return 1;
+	FILE *fin = fopen(argv[1], "r");
+	if (!fin) {
+		perror(argv[1]);
+		return 1;
 	}
+	yyrestart(fin);
+	err_occur = 0;
+	yyparse();
+	if (!err_occur) {
+		FILE *fout = fopen(argv[2], "w");
+//			print_syntax_node(root, 0);
+		InterCodeLink* icl = parse_syntax(root);
+		print_icl(fout, icl);
+		fclose(fout);
+	}
+	fclose(fin);
 	return 0;
 }

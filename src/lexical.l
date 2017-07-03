@@ -83,7 +83,7 @@ WHILE while
 {SEMI}      {lexical_token_action(LEXICAL_OTHER, SEMI, NULL);}
 {COMMA}     {lexical_token_action(LEXICAL_OTHER, COMMA, NULL);}
 {ASSIGNOP}  {lexical_token_action(LEXICAL_OTHER, ASSIGNOP, NULL);}
-{RELOP}     {lexical_token_action(LEXICAL_OTHER, RELOP, NULL);}
+{RELOP}     {lexical_token_action(LEXICAL_OTHER, RELOP, yytext);}
 {PLUS}      {lexical_token_action(LEXICAL_OTHER, PLUS, NULL);}
 {MINUS}     {lexical_token_action(LEXICAL_OTHER, MINUS, NULL);}
 {STAR}      {lexical_token_action(LEXICAL_OTHER, STAR, NULL);}

@@ -23,21 +23,21 @@ parser: $(YFO) $(filter-out $(LFO), $(OBJS))
 	$(CC) -o $@ $(filter-out $(LFO), $(OBJS)) -lfl -ly
 $(OBJDIR)/%.o: $(SRCDIR)/%.c
 	mkdir -p $(OBJDIR)
-	$(CC) -o $@ $^ $(CFLAGS) -c
+	$(CC) -o $@ $< $(CFLAGS) -c
 $(YFO): $(LFC) $(YFC)
 	mkdir -p $(OBJDIR)
 	$(CC) -c $(YFC) -o $@
 $(LFC): $(TOKEN_H) $(LFILE)
 	$(LEX) -o $@ $(LFILE)
 $(YFC): $(YFILE)
-	$(BISON) -o $@ -d -v -t $^
+	$(BISON) -o $@ -d -v -t $<
 $(TOKEN_H): $(PYFILE) $(PYCONF)
-	$(PYTHON) $^
+	$(PYTHON) $<
 -include $(patsubst %.o, %.d, $(OBJS))
 
 .PHONY: clean test testlab2
 test:
-	./parser test.cmm
+	./parser test.cmm test.ir
 testlab2:
 	@for t in $(shell find tests/lab2 -name "*.cmm"); \
 	do \
@@ -51,5 +51,5 @@ clean:
 	rm -rf $(OBJDIR)
 	rm -f $(LFC) $(YFC) $(YFC:.c=.h) $(YFILE:.y=.output)
 	rm -rf $(PYCACHEDIR)
-	rm -f test.cmm
+	rm -f test.cmm test.ir
 	rm -f *~
