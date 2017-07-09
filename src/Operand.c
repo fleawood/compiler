@@ -9,6 +9,7 @@ Operand _OPERAND_1 = { .type = OP_CONST, .value	= 1};
 Operand* make_operand()
 {
 	Operand *op = malloc(sizeof(Operand));
+	op -> mark = false;
 	return op;
 }
 
@@ -44,19 +45,19 @@ Operand* make_operand_label()
 	return op;
 }
 
-Operand *make_operand_ref(char *var)
+Operand *make_operand_ref(Operand *ori)
 {
 	Operand *op = make_operand();
 	op -> type = OP_REF;
-	op -> var = var;
+	op -> ori = ori;
 	return op;
 }
 
-Operand *make_operand_deref(char *var)
+Operand *make_operand_deref(Operand *ori)
 {
 	Operand *op = make_operand();
 	op -> type = OP_DEREF;
-	op -> var = var;
+	op -> ori = ori;
 	return op;
 }
 
@@ -79,10 +80,10 @@ char *operand_name(Operand *op)
 			sprintf(buffer, "t%d", op -> no);
 			break;
 		case OP_REF:
-			sprintf(buffer, "&%s", op -> var);
+			sprintf(buffer, "&%s", operand_name(op -> ori));
 			break;
 		case OP_DEREF:
-			sprintf(buffer, "*%s", op -> var);
+			sprintf(buffer, "*%s", operand_name(op -> ori));
 			break;
 	}
 	return buffer;

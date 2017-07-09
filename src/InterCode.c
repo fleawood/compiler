@@ -60,7 +60,7 @@ InterCode* make_intercode_func(char *name)
 	return ic;
 }
 
-InterCode* make_intercode_dec(char *array, int size)
+InterCode* make_intercode_dec(Operand *array, int size)
 {
 	InterCode *ic = make_intercode();
 	ic -> type = IC_DEC;
@@ -156,7 +156,7 @@ void print_ic(FILE *f, InterCode *ic)
 			fprintf(f, "RETURN %s\n", operand_name(ic -> unary));
 			break;
 		case IC_DEC:
-			fprintf(f, "DEC %s %d\n", ic -> array, ic -> size);
+			fprintf(f, "DEC %s %d\n", operand_name(ic -> array), ic -> size);
 			break;
 		case IC_ARG:
 			fprintf(f, "ARG %s\n", operand_name(ic -> unary));

@@ -19,6 +19,7 @@ struct FuncInfo
 	int argc;
 	struct ArgLink {
 		Symbol *arg;
+		ArgLink *prev;
 		ArgLink *next;
 	} *args;
 };

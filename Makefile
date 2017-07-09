@@ -37,7 +37,7 @@ $(TOKEN_H): $(PYFILE) $(PYCONF)
 
 .PHONY: clean test testlab2
 test:
-	./parser test.cmm test.ir
+	./parser test.cmm test.s
 testlab2:
 	@for t in $(shell find tests/lab2 -name "*.cmm"); \
 	do \
@@ -51,5 +51,5 @@ clean:
 	rm -rf $(OBJDIR)
 	rm -f $(LFC) $(YFC) $(YFC:.c=.h) $(YFILE:.y=.output)
 	rm -rf $(PYCACHEDIR)
-	rm -f test.cmm test.ir
+	rm -f test.cmm test.ir test.s
 	rm -f *~

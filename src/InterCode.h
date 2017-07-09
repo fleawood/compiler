@@ -54,7 +54,7 @@ struct InterCode {
 			Operand *dest;
 		};
 		struct {
-			char *array;
+			Operand *array;
 			int size;
 		};
 	};
@@ -71,7 +71,7 @@ InterCode* make_intercode_if(Operand *src1, int reltype, Operand *src2, Operand 
 InterCode* make_intercode_arith(int type, Operand *result, Operand *op1, Operand *op2);
 InterCode* make_intercode_call(Operand *rv, char *func);
 InterCode* make_intercode_func(char *name);
-InterCode* make_intercode_dec(char *array, int size);
+InterCode* make_intercode_dec(Operand *array, int size);
 
 #define make_intercode_arg(arg) make_intercode_unary(IC_ARG, arg)
 #define make_intercode_label(label) make_intercode_unary(IC_LABEL, label)

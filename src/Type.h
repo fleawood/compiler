@@ -42,7 +42,7 @@ struct ExpType
 struct TypeLink
 {
 	Type *type;
-	TypeLink *next;
+	TypeLink *prev, *next;
 };
 
 

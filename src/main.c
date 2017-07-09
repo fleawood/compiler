@@ -2,6 +2,7 @@
 #include "Node.h"
 #include "parse.h"
 #include "InterCode.h"
+#include "generate.h"
 
 extern void yyrestart(FILE* input_file);
 extern int yyparse();
@@ -21,9 +22,10 @@ int main(int argc, char **argv)
 	yyparse();
 	if (!err_occur) {
 		FILE *fout = fopen(argv[2], "w");
-//			print_syntax_node(root, 0);
 		InterCodeLink* icl = parse_syntax(root);
-		print_icl(fout, icl);
+		//print_icl(fout, icl);
+		proc_icl(icl);
+		print_icl2code(fout, icl);
 		fclose(fout);
 	}
 	fclose(fin);

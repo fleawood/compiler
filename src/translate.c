@@ -9,12 +9,14 @@ InterCodeLink* translate_Addr(Node *p, Type **type, Operand **op)
 	Operand *op1, *op2, *op3;
 	char *name;
 	Field *field;
+	Symbol *symbol;
 	switch (child_type(p, 0)) {
 		case _ID:
 			if (*op != NULL) free(*op);
 			name = child(p, 0) -> svalue;
-			*op = make_operand_ref(name);
-			*type = find_symbol(name) -> type;
+			symbol = find_symbol(name);
+			*op = make_operand_ref(symbol -> op);
+			*type = symbol -> type;
 			break;
 		case _Exp:
 			switch (child_type(p, 1)) {
@@ -108,7 +110,7 @@ InterCodeLink* translate_Exp(Node *p, Operand **op)
 					} else {
 						op1 = make_operand_tempvar();
 						icl1 = translate_Addr(child(p, 0), &type, &op1);
-						op2 = make_operand_deref(operand_name(op1));
+						op2 = make_operand_deref(op1);
 						op3 = make_operand_tempvar();
 						icl2 = translate_Exp(child(p, 2), &op3);
 						icl3 = make_intercode_link(assign, op2, op3);
@@ -142,7 +144,7 @@ InterCodeLink* translate_Exp(Node *p, Operand **op)
 				case _LB:
 					op1 = make_operand_tempvar();
 					icl1 = translate_Addr(p, &type, &op1);
-					op2 = make_operand_deref(operand_name(op1));
+					op2 = make_operand_deref(op1);
 					icl2 = make_intercode_link(assign, *op, op2);
 					icl = bind_code2(icl1, icl2);
 					break;
@@ -362,10 +364,20 @@ InterCodeLink* translate_FunDec(Node *p, FuncInfo *func)
 	InterCodeLink *icl1, *icl2;
 	icl1 = make_intercode_link(func, child(p, 0) -> svalue);
 	icl2 = NULL;
-	for (ArgLink *args = func -> args; args != NULL; args = args -> next) {
-		icl2 = bind_code2(icl2, make_intercode_link(param, args -> arg -> op));
+	if (func -> args == NULL)
+	{
+		icl = icl1;
 	}
-	icl = bind_code2(icl1, icl2);
+	else
+	{
+		ArgLink *args = func -> args, *head = args;
+		do
+		{
+			icl2 = bind_code2(icl2, make_intercode_link(param, args -> arg -> op));
+			args = args -> next;
+		} while (args != head);
+		icl = bind_code2(icl1, icl2);
+	}
 	return icl;
 }
 
@@ -375,14 +387,15 @@ InterCodeLink* translate_VarDec(Node *p, Type *type)
 	Symbol *symbol;
 	switch (child_type(p, 0)) {
 		case _ID:
+			symbol = find_symbol(child(p, 0) -> svalue);
 			if (is_type_struct(type)) {
-				icl = make_intercode_link(dec, child(p, 0) -> svalue, type -> size);
+				icl = make_intercode_link(dec, symbol -> op, type -> size);
 			}
 			break;
 		case _VarDec:
 			while (child_type(p, 0) == _VarDec) p = child(p, 0);
 			symbol = find_symbol(child(p, 0) -> svalue);
-			icl = make_intercode_link(dec, child(p, 0) -> svalue, symbol -> type -> size);
+			icl = make_intercode_link(dec, symbol -> op, symbol -> type -> size);
 			break;
 	}
 	return icl;

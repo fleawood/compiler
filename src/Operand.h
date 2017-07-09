@@ -3,6 +3,8 @@
 
 typedef struct Operand Operand;
 
+#include <stdbool.h>
+
 struct Operand {
 	enum {
 		OP_VAR,
@@ -15,8 +17,13 @@ struct Operand {
 	union {
 		int no;
 		int value;
-		char *var;
+		Operand *ori;
 	};
+	union {
+		int offset;
+		int size;
+	};
+	bool mark;
 };
 
 typedef struct OperandLink OperandLink;
@@ -36,8 +43,8 @@ Operand* make_operand_variable();
 Operand* make_operand_constant(int value);
 Operand* make_operand_tempvar();
 Operand* make_operand_label();
-Operand *make_operand_ref(char *var);
-Operand *make_operand_deref(char *var);
+Operand *make_operand_ref(Operand *ori);
+Operand *make_operand_deref(Operand *ori);
 
 char *operand_name(Operand *op);
 

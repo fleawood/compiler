@@ -20,7 +20,8 @@ ArgLink *make_arg_link(Symbol *symbol)
 {
 	ArgLink* arg_link = malloc(sizeof(ArgLink));
 	arg_link -> arg = symbol;
-	arg_link -> next = NULL;
+	arg_link -> prev = arg_link;
+	arg_link -> next = arg_link;
 	return arg_link;
 }
 
@@ -62,7 +63,7 @@ Symbol* make_func_symbol(FuncInfo *func, const char *name, int lineno)
 	symbol -> name = (char *)name;
 	symbol -> lineno = lineno;
 	symbol -> is_func = true;
-	symbol -> op = NULL;
+	symbol -> op = make_operand_tempvar();
 	return symbol;
 }
 
@@ -135,23 +136,38 @@ Type *find_struct(const char *name)
 
 int check_func_args(ArgLink *arg_link, TypeLink *type_link)
 {
-	while (arg_link != NULL && type_link != NULL) {
+	if (arg_link == NULL || type_link == NULL)
+	{
+		if (arg_link == NULL && type_link == NULL) return 0;
+		return -1;
+	}
+	ArgLink *arg_head = arg_link;
+	TypeLink *type_head = type_link;
+	do
+	{
 		if (!is_type_equal(arg_link -> arg -> type, type_link -> type)) return -1;
 		arg_link = arg_link -> next;
 		type_link = type_link -> next;
-	}
-	if (arg_link == NULL && type_link == NULL) return 0;
+	} while (arg_link != arg_head && type_link != type_head);
+	if (arg_link == arg_head && type_link == type_head) return 0;
 	else return -1;
 }
 
 int check_func_dec_args(ArgLink *arg_link1, ArgLink *arg_link2)
 {
-	while (arg_link1 != NULL && arg_link2 != NULL) {
+	if (arg_link1 == NULL || arg_link2 == NULL)
+	{
+		if (arg_link1 == NULL && arg_link2 == NULL) return 0;
+		return -1;
+	}
+	ArgLink *head1 = arg_link1, *head2 = arg_link2;
+	do
+	{
 		if (!is_type_equal(arg_link1 -> arg -> type, arg_link2 -> arg -> type)) return -1;
 		arg_link1 = arg_link1 -> next;
 		arg_link2 = arg_link2 -> next;
-	}
-	if (arg_link1 == NULL && arg_link2 == NULL) return 0;
+	} while (arg_link1 != head1 && arg_link2 != head2);
+	if (arg_link1 == head1 && arg_link2 == head2) return 0;
 	else return -1;
 }
 
@@ -232,15 +248,29 @@ void insert_func_dec_to_stack(Symbol *symbol, Stack *stack)
 void insert_var_to_func_args(Symbol *symbol, FuncInfo *func)
 {
 	ArgLink *arg_link = make_arg_link(symbol);
-	insert_to_link(arg_link, func -> args, next);
+	ArgLink *args = func -> args;
+	if (args == NULL) func -> args = arg_link;
+	else
+	{
+		ArgLink *prev = args -> prev, *next = args;
+		prev -> next = arg_link;
+		arg_link -> prev = prev;
+		next -> prev = arg_link;
+		arg_link -> next = next;
+	}
+	//insert_to_link(arg_link, func -> args, next);
 }
 
 void insert_func_args_to_stack(FuncInfo *func, Stack *stack)
 {
-	for (ArgLink *args = func -> args; args != NULL; args = args -> next) {
+	if (func -> args == NULL) return;
+	ArgLink *args = func -> args, *head = args;
+	do
+	{
 		Symbol *symbol = args -> arg;
 		insert_var_to_stack(symbol, stack);
-	}
+		args = args -> next;
+	} while (args != head);
 }
 
 void insert_struct_to_stack(Symbol *symbol, Stack *stack)
@@ -256,14 +286,14 @@ void insert_struct_to_stack(Symbol *symbol, Stack *stack)
 void delete_symbol(Symbol *symbol)
 {
 	if (symbol == NULL) return;
-	free(symbol);
+	//free(symbol);
 }
 
 void delete_symbol_link(SymbolLink *symbol_link)
 {
 	if (symbol_link == NULL) return;
 	delete_symbol(symbol_link -> symbol);
-	free(symbol_link);
+	//free(symbol_link);
 }
 
 void delete_symbol_on_stack(Stack *stack)

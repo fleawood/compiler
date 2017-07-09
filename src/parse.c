@@ -21,8 +21,8 @@ FuncInfo* parse_FunDec(Node *p, Type *type, bool is_def);
 FuncInfo* parse_VarList(Node *p, Type *type);
 Symbol* parse_ParamDec(Node *p);
 InterCodeLink* parse_CompSt(Node *p, FuncInfo *func);
-InterCodeLink* parse_StmtList(Node *p, Type *type);
-InterCodeLink* parse_Stmt(Node *p, Type *type);
+InterCodeLink* parse_StmtList(Node *p, FuncInfo *type);
+InterCodeLink* parse_Stmt(Node *p, FuncInfo *type);
 InterCodeLink* parse_DefList(Node *p, Type *s);
 InterCodeLink* parse_Def(Node *p, Type *s);
 InterCodeLink* parse_DecList(Node *p, Type *type, Type *s);
@@ -36,14 +36,21 @@ TypeLink* parse_Args(Node *p)
 	TypeLink *types = NULL;
 	Type *type = parse_Exp(child(p, 0)) -> type;
 	TypeLink *type_link = make_type_link(type);
-	insert_to_link(type_link, types, next);
+	types = type_link;
+//	insert_to_link(type_link, types, next);
 	while (child_cnt(p) == 3) {
 		assert(child_type(p, 1) == _COMMA);
 		assert(child_type(p, 2) == _Args);
 		p = child(p, 2);
 		type = parse_Exp(child(p, 0)) -> type;
 		type_link = make_type_link(type);
-		insert_to_link(type_link, types, next);
+		TypeLink *prev = types -> prev;
+		TypeLink *next = types;
+		prev -> next = type_link;
+		type_link -> prev = prev;
+		next -> prev = type_link;
+		type_link -> next = next;
+		//insert_to_link(type_link, types, next);
 	}
 	return types;
 }
@@ -270,7 +277,7 @@ InterCodeLink* parse_DefList(Node *p, Type *s)
 	return icl;
 }
 
-InterCodeLink* parse_Stmt(Node *p, Type *type)
+InterCodeLink* parse_Stmt(Node *p, FuncInfo *func)
 {
 	assert(p -> node_type == _Stmt);
 	ExpType *exp;
@@ -278,13 +285,14 @@ InterCodeLink* parse_Stmt(Node *p, Type *type)
 	InterCodeLink *icl1, *icl2, *icl3, *icl4, *icl5, *icl6, *icl7;
 	Operand *op = NULL;
 	Operand *label1, *label2, *label3;
+	Type *type = func == NULL ? NULL : func -> type;
 	switch (child_type(p, 0)) {
 		case _Exp:
 			parse_Exp(child(p, 0));
 			icl = translate_Exp(child(p, 0), &op);
 			break;
 		case _CompSt:
-			icl = parse_CompSt(child(p, 0), NULL);
+			icl = parse_CompSt(child(p, 0), func);
 			break;
 		case _RETURN:
 			exp = parse_Exp(child(p, 1));
@@ -307,7 +315,7 @@ InterCodeLink* parse_Stmt(Node *p, Type *type)
 					label2 = make_operand_label();
 					icl1 = translate_Cond(child(p, 2), label1, label2);
 					icl2 = make_intercode_link(label, label1);
-					icl3 = parse_Stmt(child(p, 4), type);
+					icl3 = parse_Stmt(child(p, 4), func);
 					icl4 = make_intercode_link(label, label2);
 					icl = bind_code4(icl1, icl2, icl3, icl4);
 					break;
@@ -317,10 +325,10 @@ InterCodeLink* parse_Stmt(Node *p, Type *type)
 					label3 = make_operand_label();
 					icl1 = translate_Cond(child(p, 2), label1, label2);
 					icl2 = make_intercode_link(label, label1);
-					icl3 = parse_Stmt(child(p, 4), type);
+					icl3 = parse_Stmt(child(p, 4), func);
 					icl4 = make_intercode_link(goto, label3);
 					icl5 = make_intercode_link(label, label2);
-					icl6 = parse_Stmt(child(p, 6), type);
+					icl6 = parse_Stmt(child(p, 6), func);
 					icl7 = make_intercode_link(label, label3);
 					icl = bind_code7(icl1, icl2, icl3, icl4, icl5, icl6, icl7);
 					break;
@@ -340,7 +348,7 @@ InterCodeLink* parse_Stmt(Node *p, Type *type)
 			icl1 = make_intercode_link(label, label1);
 			icl2 = translate_Cond(child(p, 2), label2, label3);
 			icl3 = make_intercode_link(label, label2);
-			icl4 = parse_Stmt(child(p, 4), type);
+			icl4 = parse_Stmt(child(p, 4), func);
 			icl5 = make_intercode_link(goto, label1);
 			icl6 = make_intercode_link(label, label3);
 			icl = bind_code6(icl1, icl2, icl3, icl4, icl5, icl6);
@@ -352,12 +360,12 @@ InterCodeLink* parse_Stmt(Node *p, Type *type)
 	return icl;
 }
 
-InterCodeLink* parse_StmtList(Node *p, Type *type)
+InterCodeLink* parse_StmtList(Node *p, FuncInfo *func)
 {
 	InterCodeLink *icl = NULL;
 	while (p != NULL) {
 		assert(p -> node_type == _StmtList);
-		icl = bind_code2(icl, parse_Stmt(child(p, 0), type));
+		icl = bind_code2(icl, parse_Stmt(child(p, 0), func));
 		p = child(p, 1);
 	}
 	return icl;
@@ -371,7 +379,7 @@ InterCodeLink* parse_CompSt(Node *p, FuncInfo *func)
 	push_stack();
 	if (func != NULL) insert_func_args_to_stack(func, stack_top);
 	icl1 = parse_DefList(child(p, 1), NULL);
-	icl2 = parse_StmtList(child(p, 2), func == NULL ? NULL : func -> type);
+	icl2 = parse_StmtList(child(p, 2), func);
 	icl = bind_code2(icl1, icl2);
 	pop_stack();
 	return icl;

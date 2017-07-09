@@ -81,7 +81,8 @@ TypeLink* make_type_link(Type *type)
 {
 	TypeLink *type_link = malloc(sizeof(TypeLink));
 	type_link -> type = type;
-	type_link -> next = NULL;
+	type_link -> prev = type_link;
+	type_link -> next = type_link;
 	return type_link;
 }
 
